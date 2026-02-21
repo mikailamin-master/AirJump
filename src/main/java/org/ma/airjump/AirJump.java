@@ -35,24 +35,24 @@ public class AirJump implements ClientModInitializer {
     public void onInitializeClient() {
 
         key_multi_jump = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "Toggle AirJump",
+                "key.airjump.toggle",               // translation key
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_J,
-                "AirJumpMod"
+                KeyBinding.Category.MISC          // fixed category
         ));
 
         key_launch = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "Toggle SuperLaunch",
+                "key.airjump.superlaunch",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_K,
-                "AirJumpMod"
+                KeyBinding.Category.MISC
         ));
 
         key_no_fall = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "Toggle NoFall",
+                "key.airjump.nofall",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_L,
-                "AirJumpMod"
+                KeyBinding.Category.MISC
         ));
 
         // key toggle handler
@@ -99,7 +99,7 @@ public class AirJump implements ClientModInitializer {
                     if (client.player.getMainHandStack().getItem() == Items.STICK ||
                             client.player.getOffHandStack().getItem() == Items.STICK) {
                         if (is_sneaking) {
-                            client.inGameHud.getChatHud().addMessage(Text.literal("-- SuperLaunch isn't allowed during snick!").formatted(Formatting.RED));
+                            client.inGameHud.getChatHud().addMessage(Text.literal("-- SuperLaunch isn't allowed during sneak!").formatted(Formatting.RED));
                             was_jumping = is_jumping;
                             was_right_clicking = true;
                             return;
@@ -135,19 +135,5 @@ public class AirJump implements ClientModInitializer {
                 );
             }
         });
-        /*
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null) return;
-
-            double x_vel = client.player.getVelocity().x;
-            double y_vel = client.player.getVelocity().y;
-            double z_vel = client.player.getVelocity().z;
-
-            client.player.sendMessage(
-                    Text.literal(String.format("VX: %.2f", x_vel) + String.format(" VY: %.2f", y_vel) + String.format(" VZ: %.2f", z_vel)),
-                    true
-            );
-        });
-         */
     }
 }
