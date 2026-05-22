@@ -50,6 +50,12 @@ public class AirJump implements ClientModInitializer {
         boolean is_right_clicking = client.options.keyUse.isDown();
         boolean is_jumping = client.options.keyJump.isDown();
         boolean is_sneaking = client.options.keyShift.isDown();
+
+        var hit = client.hitResult;
+
+        boolean is_air_use = client.options.keyUse.isDown()
+            && (hit == null || hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS)
+            && client.screen == null;
         
         if (launch_ticks <= 20) {
             launch_ticks++;
@@ -76,7 +82,7 @@ public class AirJump implements ClientModInitializer {
         }
 
         if (CONFIG.launch) {
-            if (is_right_clicking && !was_right_clicking) {
+            if (is_air_use && !was_right_clicking) {
                 Item launchWand = CONFIG.launchWandItem();
                 if (client.player.getMainHandItem().is(launchWand) ||
                         client.player.getOffhandItem().is(launchWand)) {
@@ -120,7 +126,7 @@ public class AirJump implements ClientModInitializer {
         }
 
         was_jumping = is_jumping;
-        was_right_clicking = is_right_clicking;
+        was_right_clicking = is_air_use;
     }
 
     public static Screen createSettingsScreen(Screen parent) {
