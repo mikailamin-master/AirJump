@@ -6,6 +6,7 @@
     "mixins": [
     ],
     "client": [
+        "MinecraftTickMixin"
     ],
     "injectors": {
         "defaultRequire": 1
