@@ -53,16 +53,20 @@ public class AirJump implements ClientModInitializer {
 
         var hit = client.hitResult;
 
-        boolean is_air_use = client.options.keyUse.isDown()
-            && (hit == null || hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS)
-            && client.screen == null;
+        boolean is_air_use = is_right_clicking
+            && !client.player.isUsingItem()
+            && client.screen == null
+            && (
+                hit == null ||
+                hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS
+            );
         
-        if (launch_ticks <= 20) {
+        if (launch_ticks <= 8) {
             launch_ticks++;
             client.particleEngine.createParticle(
                 ParticleTypes.EXPLOSION,
                 client.player.getX(),
-                client.player.getY() + 1.0D,
+                client.player.getY() + 0.4D,
                 client.player.getZ(),
                 (Math.random() - 0.5D) * 0.4D,
                 Math.random() * 0.2D,
