@@ -19,6 +19,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.particles.ParticleTypes;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -30,6 +34,7 @@ public class AirJump implements ClientModInitializer {
     private static boolean was_right_clicking = false;
     private static boolean was_jumping = false;
     private static final boolean is_send_packet = true;
+    private static int launch_ticks = 0;
 
     private static final Config CONFIG = new Config();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -39,14 +44,27 @@ public class AirJump implements ClientModInitializer {
         CONFIG.load(Minecraft.getInstance().gameDirectory.toPath().resolve("config").resolve("airjump.json"));
     }
 
-    public static void clientTick(Minecraft client) {
+    public static void client_tick(Minecraft client) {
         if (client.player == null) return;
 
         boolean is_right_clicking = client.options.keyUse.isDown();
         boolean is_jumping = client.options.keyJump.isDown();
         boolean is_sneaking = client.options.keyShift.isDown();
+        
+        if (launch_ticks <= 20) {
+            launch_ticks++;
+            client.particleEngine.createParticle(
+                ParticleTypes.EXPLOSION,
+                client.player.getX(),
+                client.player.getY() + 1.0D,
+                client.player.getZ(),
+                (Math.random() - 0.5D) * 0.4D,
+                Math.random() * 0.2D,
+                (Math.random() - 0.5D) * 0.4D
+            );
+        }
 
-        if (CONFIG.multiJump) {
+        if (CONFIG.multi_jump) {
             if (is_jumping && !was_jumping) {
                 client.player.jumpFromGround();
             }
@@ -76,11 +94,22 @@ public class AirJump implements ClientModInitializer {
                     if (b_y < 0) b_y = y;
 
                     client.player.setDeltaMovement(boosted.x, b_y, boosted.z);
+                    client.level.playLocalSound(
+                        client.player.getX(),
+                        client.player.getY(),
+                        client.player.getZ(),
+                        SoundEvents.GENERIC_EXPLODE.value(),
+                        SoundSource.PLAYERS,
+                        0.9F,
+                        1.2F,
+                        false
+                    );
+                    launch_ticks = 0;
                 }
             }
         }
 
-        if (CONFIG.noFallDamage) {
+        if (CONFIG.no_fall_damage) {
             boolean is_elytra = client.player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA);
             boolean is_mace = client.player.getMainHandItem().is(Items.MACE);
             if (!client.player.isCreative() && is_send_packet && client.player.fallDistance > 2.5f && !is_elytra && !is_mace) {
@@ -101,9 +130,9 @@ public class AirJump implements ClientModInitializer {
     private static class Config {
         private static final double DEFAULT_LAUNCH_VELOCITY = 5.0D;
         private transient Path path;
-        public boolean multiJump = true;
+        public boolean multi_jump = true;
         public boolean launch = true;
-        public boolean noFallDamage = true;
+        public boolean no_fall_damage = true;
         public String launchWand = "minecraft:stick";
         public double launchVelocity = DEFAULT_LAUNCH_VELOCITY;
 
@@ -117,9 +146,9 @@ public class AirJump implements ClientModInitializer {
             try (Reader reader = Files.newBufferedReader(path)) {
                 Config loaded = GSON.fromJson(reader, Config.class);
                 if (loaded != null) {
-                    multiJump = loaded.multiJump;
+                    multi_jump = loaded.multi_jump;
                     launch = loaded.launch;
-                    noFallDamage = loaded.noFallDamage;
+                    no_fall_damage = loaded.no_fall_damage;
                     launchWand = loaded.launchWand == null || loaded.launchWand.isBlank() ? "minecraft:stick" : loaded.launchWand;
                     launchVelocity = sanitizeVelocity(loaded.launchVelocity);
                 }
@@ -174,10 +203,10 @@ public class AirJump implements ClientModInitializer {
             int centerX = width / 2;
             int y = height / 2 - 76;
 
-            addRenderableWidget(Button.builder(toggleLabel("AirJump", CONFIG.multiJump), button -> {
-                CONFIG.multiJump = !CONFIG.multiJump;
+            addRenderableWidget(Button.builder(toggleLabel("AirJump", CONFIG.multi_jump), button -> {
+                CONFIG.multi_jump = !CONFIG.multi_jump;
                 CONFIG.save();
-                button.setMessage(toggleLabel("AirJump", CONFIG.multiJump));
+                button.setMessage(toggleLabel("AirJump", CONFIG.multi_jump));
             }).bounds(centerX - 100, y, 200, 20).build());
 
             addRenderableWidget(Button.builder(toggleLabel("SuperLaunch", CONFIG.launch), button -> {
@@ -186,10 +215,10 @@ public class AirJump implements ClientModInitializer {
                 button.setMessage(toggleLabel("SuperLaunch", CONFIG.launch));
             }).bounds(centerX - 100, y + 24, 200, 20).build());
 
-            addRenderableWidget(Button.builder(toggleLabel("NoFall", CONFIG.noFallDamage), button -> {
-                CONFIG.noFallDamage = !CONFIG.noFallDamage;
+            addRenderableWidget(Button.builder(toggleLabel("NoFall", CONFIG.no_fall_damage), button -> {
+                CONFIG.no_fall_damage = !CONFIG.no_fall_damage;
                 CONFIG.save();
-                button.setMessage(toggleLabel("NoFall", CONFIG.noFallDamage));
+                button.setMessage(toggleLabel("NoFall", CONFIG.no_fall_damage));
             }).bounds(centerX - 100, y + 48, 200, 20).build());
 
             wandInput = addRenderableWidget(new EditBox(font, centerX - 100, y + 88, 200, 20, Component.literal("Launch wand item")));
@@ -218,7 +247,7 @@ public class AirJump implements ClientModInitializer {
                 CONFIG.save();
             }).bounds(centerX - 100, y + 168, 98, 20).build());
 
-            addRenderableWidget(Button.builder(Component.literal("Save"), button -> {
+            addRenderableWidget(Button.builder(Component.literal("Save & Exit"), button -> {
                 if (!CONFIG.isValidLaunchWand()) {
                     CONFIG.launchWand = "minecraft:stick";
                     wandInput.setValue(CONFIG.launchWand);

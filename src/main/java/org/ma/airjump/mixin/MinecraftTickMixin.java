@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MinecraftTickMixin {
     @Inject(method = "tick", at = @At("TAIL"))
     private void airjump$tick(CallbackInfo ci) {
-        AirJump.clientTick((Minecraft) (Object) this);
+        AirJump.client_tick((Minecraft) (Object) this);
     }
 }
